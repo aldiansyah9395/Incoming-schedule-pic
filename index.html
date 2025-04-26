@@ -1,18 +1,18 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Incoming Container Monitoring</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="css/style.css">
-  <script defer src="js/script.js"></script>
 </head>
 <body>
-  <h2>Dashboard Monitoring Incoming Container</h2>
 
-  <input type="file" accept=".csv" onchange="handleFileUpload(event)">
-  <br><br>
+  <h1>Incoming Container Monitoring</h1>
 
-  <table>
+  <input type="file" id="csvFile" accept=".csv">
+  <table id="containerTable" class="display">
     <thead>
       <tr>
         <th>No</th>
@@ -28,21 +28,13 @@
         <th>Finish</th>
       </tr>
     </thead>
-    <tbody>
-      <tr id="row1" class="data-row status-Planning">
-        <td>1</td>
-        <td>ABCD1234567</td>
-        <td>40</td>
-        <td>Unload Full</td>
-        <td>INV-00123</td>
-        <td>100 Packages</td>
-        <td>2025-04-26</td>
-        <td class="status-cell">Planning</td>
-        <td class="time-in"></td>
-        <td class="unloading-time"></td>
-        <td class="finish"></td>
-      </tr>
-    </tbody>
+    <tbody></tbody>
   </table>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script defer src="js/script.js"></script>
+
 </body>
 </html>
