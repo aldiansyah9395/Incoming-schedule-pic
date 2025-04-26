@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <h2>Dashboard Monitoring Incoming Container</h2>
+
+  <input type="file" accept=".csv" onchange="handleFileUpload(event)">
+  <br><br>
+
+  <table>
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Container No</th>
+        <th>Feet</th>
+        <th>Unloading Type</th>
+        <th>Invoice No</th>
+        <th>Package</th>
+        <th>Incoming Date</th>
+        <th>Status</th>
+        <th>Time In</th>
+        <th>Unloading Time</th>
+        <th>Finish</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="row1" class="data-row status-Planning">
+        <td>1</td>
+        <td>ABCD1234567</td>
+        <td>40</td>
+        <td>Unload Full</td>
+        <td>INV-00123</td>
+        <td>100 Packages</td>
+        <td>2025-04-26</td>
+        <td class="status-cell">Planning</td>
+        <td class="time-in"></td>
+        <td class="unloading-time"></td>
+        <td class="finish"></td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>
