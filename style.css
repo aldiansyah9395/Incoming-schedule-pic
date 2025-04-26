@@ -1,0 +1,23 @@
+
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+th {
+  background-color: #f0f0f0;
+}
+.status-Planning { background-color: #fff9c4; }
+.status-Waiting { background-color: #c5cae9; }
+.status-Processing { background-color: #ffe082; }
+.status-Done { background-color: #c8e6c9; }
