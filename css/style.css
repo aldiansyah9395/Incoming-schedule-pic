@@ -1,22 +1,68 @@
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f6f8;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
 }
 
 h1 {
   text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+}
+
+.upload-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.upload-label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
 #csvFile {
-  display: block;
-  margin: 20px auto;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table.dataTable {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 table.dataTable thead th {
+  background-color: #1976d2;
+  color: white;
   text-align: center;
-  white-space: nowrap; /* supaya header tidak wrap */
+  white-space: nowrap;
 }
 
-table.dataTable td {
+table.dataTable tbody td {
   text-align: center;
+  white-space: nowrap;
+  background-color: #ffffff;
+}
+
+table.dataTable tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+table.dataTable tbody tr:hover {
+  background-color: #e3f2fd;
 }
