@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   const fileInput = document.getElementById('csvFile');
+  const uploadBtn = document.getElementById('uploadBtn');
   const table = $('#containerTable').DataTable({
     columns: [
       { data: "No" },
@@ -52,6 +53,35 @@ document.addEventListener('DOMContentLoaded', function () {
       table.clear();
       table.rows.add(parsedData);
       table.draw();
+    };
+    reader.readAsText(file);
+  });
+
+  uploadBtn.addEventListener('click', function () {
+    const file = fileInput.files[0];
+    if (!file) {
+      alert('Please select a CSV file first.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const text = e.target.result;
+      const parsedData = Papa.parse(text, { header: false }).data; // Header false biar semua ikut dikirim
+
+      // Kirim ke Web App
+      fetch('https://script.google.com/macros/s/AKfycbys1HnSeudtSwkfeEw3Sk9d3lbv2ZFu-cvZf7hNBPvhy2-0A-zsQ6GtoqadHH7QshyISQ/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(parsedData)
+      }).then(response => {
+        alert('Upload sukses ke Google Sheets!');
+      }).catch(error => {
+        alert('Upload gagal: ' + error.message);
+      });
     };
     reader.readAsText(file);
   });
