@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const parsedData = Papa.parse(text, { header: false }).data; // Header false biar semua ikut dikirim
 
       // Kirim ke Web App
-      fetch('https://script.google.com/macros/s/AKfycbys1HnSeudtSwkfeEw3Sk9d3lbv2ZFu-cvZf7hNBPvhy2-0A-zsQ6GtoqadHH7QshyISQ/exec', {
+      fetch('https://script.google.com/macros/s/AKfycby5vPXBTiDxkXo3Uc9SjXR0Pg52hKQ7qz69i7P18Yb8tGbHkdAXstypgNiA0Zmh8la7/exec', {
         method: 'POST',
         mode: 'no-cors',
         headers: {
