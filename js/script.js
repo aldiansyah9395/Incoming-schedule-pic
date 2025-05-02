@@ -61,46 +61,43 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function deleteAllAirtableRecords() {
-    let allRecordIds = [];
-    let offset = null;
-    const headers = { Authorization: token };
+    const headers = {
+      Authorization: token,
+      "Content-Type": "application/json"
+    };
 
-    // Ambil semua ID record dari semua halaman
+    const allRecords = [];
+    let offset = "";
+
     do {
-      let url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
-      if (offset) url += `&offset=${offset}`;
+      const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}${offset ? `?offset=${offset}` : ""}`, {
+        headers: { Authorization: token }
+      });
+      const json = await res.json();
 
-      const response = await fetch(url, { headers });
-      const data = await response.json();
-
-      if (data.records) {
-        const ids = data.records.map(rec => rec.id);
-        allRecordIds.push(...ids);
-        offset = data.offset;
+      if (json.records) {
+        allRecords.push(...json.records.map(r => r.id));
+        offset = json.offset;
       } else {
         offset = null;
       }
     } while (offset);
 
-    console.log(`🧹 Total record ditemukan: ${allRecordIds.length}`);
+    console.log(`🧹 Total record ditemukan: ${allRecords.length}`);
 
-    // Hapus semua ID dalam batch 10
-    for (let i = 0; i < allRecordIds.length; i += 10) {
-      const batch = allRecordIds.slice(i, i + 10);
-      const deleteRes = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+    for (let i = 0; i < allRecords.length; i += 10) {
+      const batch = allRecords.slice(i, i + 10);
+      const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
         method: "DELETE",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json"
-        },
+        headers,
         body: JSON.stringify({ records: batch })
       });
 
-      const result = await deleteRes.json();
-      console.log(`✅ Dihapus ${result.records?.length || 0} record`);
+      const result = await res.json();
+      console.log(`✅ Batch dihapus: ${result.records?.length || 0}`);
     }
 
-    console.log("✅ Semua record lama berhasil dihapus.");
+    console.log("✅ Semua data lama berhasil dihapus.");
   }
 
   function uploadToAirtable(records) {
@@ -136,7 +133,7 @@ document.addEventListener("DOMContentLoaded", function () {
         await deleteAllAirtableRecords();      // Hapus semua data lama
         await uploadToAirtable(rows);          // Upload data baru
         alert("✅ Data berhasil dikirim ke Airtable!");
-        loadAirtableData();                    // Tampilkan di halaman
+        loadAirtableData();                    // Refresh tampilan
       }
     });
   }
@@ -146,6 +143,5 @@ document.addEventListener("DOMContentLoaded", function () {
     if (file) parseAndUploadCSV(file);
   });
 
-  // Jalankan saat pertama kali halaman dibuka
   loadAirtableData();
 });
