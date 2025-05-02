@@ -93,6 +93,13 @@ document.addEventListener("DOMContentLoaded", function () {
     for (let i = 0; i < allRecordIds.length; i += 10) {
       const batch = allRecordIds.slice(i, i + 10);
       console.log("🚮 Menghapus batch:", batch); // log untuk verifikasi
+
+      // Pastikan hanya 10 ID yang dikirim
+      if (batch.length > 10) {
+        console.error("❌ Batch melebihi 10 ID, batch size:", batch.length);
+        continue;
+      }
+
       const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
         method: "DELETE",
         headers,
