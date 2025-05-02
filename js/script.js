@@ -5,17 +5,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const token = "Bearer patiH2AOAO9YAtJhA.61cafc7228a34200466c4235f324b0a9368cf550d04e83656db17d3374ec35d4";
 
   function renderRow(row, index) {
-    const feet = row["FEET"]?.trim();
-    const packageVal = row["PACKAGE"]?.trim().toLowerCase();
+    const feet = row["FEET"]?.trim().toUpperCase();
+    const packageVal = row["PACKAGE"]?.trim().toUpperCase();
+
     let np20 = "", np40 = "", p20 = "", p40 = "";
 
-    if (packageVal !== "bag") {
-      if (feet === '1x20"') {
-        p20 = "✔";
-      } else if (feet === '1x40"') {
-        np40 = "✔";
-      }
-    }
+    if (feet === '1X20' && packageVal === 'BAG') np20 = '✔';
+    else if (feet === '1X40' && packageVal === 'BAG') np40 = '✔';
+    else if (feet === '1X20' && packageVal !== 'BAG') p20 = '✔';
+    else if (feet === '1X40' && packageVal !== 'BAG') p40 = '✔';
 
     return `
       <tr>
@@ -38,12 +36,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function loadAirtableData() {
-    fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+    fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`, {
       headers: { Authorization: token }
     })
       .then(res => res.json())
       .then(data => {
-        console.log("Response dari Airtable:", data); // <-- Tambahkan ini
         table.clear();
         const rows = data.records.map(r => r.fields);
         rows.forEach((row, i) => {
@@ -53,6 +50,36 @@ document.addEventListener("DOMContentLoaded", function () {
         table.draw();
       })
       .catch(err => console.error("Airtable error:", err));
+  }
+
+  async function deleteAllAirtableRecords() {
+    const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+
+    const response = await fetch(url, {
+      headers: { Authorization: token }
+    });
+    const data = await response.json();
+    if (!data.records) return;
+
+    const recordIds = data.records.map(rec => rec.id);
+    const chunks = [];
+
+    for (let i = 0; i < recordIds.length; i += 10) {
+      chunks.push(recordIds.slice(i, i + 10));
+    }
+
+    for (const chunk of chunks) {
+      await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ records: chunk })
+      });
+    }
+
+    console.log("Semua data lama berhasil dihapus.");
   }
 
   function uploadToAirtable(records) {
@@ -79,12 +106,13 @@ document.addEventListener("DOMContentLoaded", function () {
     return Promise.all(uploads);
   }
 
-  function parseAndUploadCSV(file) {
+  async function parseAndUploadCSV(file) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: function (results) {
+      complete: async function (results) {
         const rows = results.data;
+        await deleteAllAirtableRecords();
         uploadToAirtable(rows)
           .then(() => {
             alert("✅ Data berhasil dikirim ke Airtable!");
