@@ -1,40 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Incoming Container Monitoring</title>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-
   <div class="container">
     <h1>Incoming Container Monitoring</h1>
 
-    <div style="text-align: right; margin-bottom: 1rem;">
-      <a href="https://script.google.com/macros/s/AKfycby5vPXBTiDxkXo3Uc9SjXR0Pg52hKQ7qz69i7P18Yb8tGbHkdAXstypgNiA0Zmh8la7/exec" target="_blank">
-      <button class="btn-upload">
-        Upload data schedule incoming
-      </button>
-      </a>
+    <div class="upload-section">
+      <label class="upload-label" for="csvFile">Upload CSV (langsung ke Airtable)</label>
+      <input type="file" id="csvFile" accept=".csv" />
     </div>
 
     <div class="table-wrapper">
       <table id="containerTable" class="display">
         <thead>
           <tr>
-            <th>No</th>
-            <th>Container No</th>
-            <th>Feet</th>
-            <th>Unloading Type</th>
-            <th>Invoice No</th>
-            <th>Package</th>
-            <th>Incoming Date</th>
-            <th>Status</th>
-            <th>Time In</th>
-            <th>Unloading Time</th>
-            <th>Finish</th>
+            <th rowspan="2">No</th>
+            <th rowspan="2">Container No</th>
+            <th rowspan="2">Feet</th>
+            <th colspan="2">NON PALLETIZE</th>
+            <th colspan="2">PALLETIZE</th>
+            <th rowspan="2">Invoice No</th>
+            <th rowspan="2">Package</th>
+            <th rowspan="2">Incoming Date</th>
+            <th rowspan="2">Status</th>
+            <th rowspan="2">Time In</th>
+            <th rowspan="2">Unloading Time</th>
+            <th rowspan="2">Finish</th>
+          </tr>
+          <tr>
+            <th>20"</th>
+            <th>40"</th>
+            <th>20"</th>
+            <th>40"</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -42,10 +45,10 @@
     </div>
   </div>
 
+  <!-- JS & Library -->
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script defer src="js/script.js"></script>
-
 </body>
 </html>
