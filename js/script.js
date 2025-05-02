@@ -56,34 +56,41 @@ function loadAirtableData() {
 
 
   async function deleteAllAirtableRecords() {
-    const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+  let offset = null;
+  const headers = { Authorization: token };
+  const allIds = [];
 
-    const response = await fetch(url, {
-      headers: { Authorization: token }
-    });
+  do {
+    let url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+    if (offset) url += `&offset=${offset}`;
+
+    const response = await fetch(url, { headers });
     const data = await response.json();
-    if (!data.records) return;
 
-    const recordIds = data.records.map(rec => rec.id);
-    const chunks = [];
-
-    for (let i = 0; i < recordIds.length; i += 10) {
-      chunks.push(recordIds.slice(i, i + 10));
+    if (data.records && data.records.length > 0) {
+      const ids = data.records.map(r => r.id);
+      allIds.push(...ids);
     }
 
-    for (const chunk of chunks) {
-      await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ records: chunk })
-      });
-    }
+    offset = data.offset; // teruskan jika ada halaman berikutnya
+  } while (offset);
 
-    console.log("Semua data lama berhasil dihapus.");
+  // Hapus semua ID dalam batch 10
+  for (let i = 0; i < allIds.length; i += 10) {
+    const batch = allIds.slice(i, i + 10);
+    await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ records: batch })
+    });
   }
+
+  console.log("🧹 Semua record berhasil dihapus:", allIds.length);
+}
+
 
   function uploadToAirtable(records) {
     const chunks = [];
