@@ -1,88 +1,112 @@
-document.addEventListener('DOMContentLoaded', function () {
-  const fileInput = document.getElementById('csvFile');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const table = $('#containerTable').DataTable({
-    columns: [
-      { data: "No" },
-      { data: "Container No" },
-      { data: "Feet" },
-      { data: "Unloading Type" },
-      { data: "Invoice No" },
-      { data: "Package" },
-      { data: "Incoming Date" },
-      { data: "Status" },
-      { data: "Time In" },
-      { data: "Unloading Time" },
-      { data: "Finish" },
-    ],
-    paging: false,
-    searching: false,
-    info: false,
-    ordering: false,
-  });
+document.addEventListener("DOMContentLoaded", function () {
+  const table = $("#containerTable").DataTable();
+  const tableBody = document.querySelector("#containerTable tbody");
 
-  fileInput.addEventListener('change', function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  const baseId = "appxekctFAWmMVFzc";
+  const tableName = "data-cont";
+  const token = "Bearer patiH2AOAO9YAtJhA.61cafc7228a34200466c4235f324b0a9368cf550d04e83656db17d3374ec35d4";
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const text = e.target.result;
-      const parsedData = Papa.parse(text, { header: true }).data;
+  function renderRow(row, index) {
+    const feet = row["FEET"]?.trim();
+    const packageVal = row["PACKAGE"]?.trim().toLowerCase();
 
-      // Sort berdasarkan Time In
-      parsedData.sort((a, b) => {
-        const timeA = a["Time In"] ? a["Time In"].split(":").map(Number) : [99, 99];
-        const timeB = b["Time In"] ? b["Time In"].split(":").map(Number) : [99, 99];
-        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-      });
+    let np20 = '', np40 = '', p20 = '', p40 = '';
 
-      // Update Status
-      parsedData.forEach(row => {
-        if (row["Finish"]) {
-          row["Status"] = "Unloading process already done";
-        } else if (row["Unloading Time"]) {
-          row["Status"] = "Processing";
-        } else if (row["Time In"]) {
-          row["Status"] = "Waiting";
-        } else {
-          row["Status"] = "Planning";
-        }
-      });
-
-      table.clear();
-      table.rows.add(parsedData);
-      table.draw();
-    };
-    reader.readAsText(file);
-  });
-
-  uploadBtn.addEventListener('click', function () {
-    const file = fileInput.files[0];
-    if (!file) {
-      alert('Please select a CSV file first.');
-      return;
+    if (packageVal !== "bag") {
+      if (feet === '1x20"') {
+        p20 = '✔';
+      } else if (feet === '1x40"') {
+        np40 = '✔';
+      }
     }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const text = e.target.result;
-      const parsedData = Papa.parse(text, { header: false }).data; // Header false biar semua ikut dikirim
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${row["NO CONTAINER"] || ""}</td>
+        <td>${feet || ""}</td>
+        <td>${np20}</td>
+        <td>${np40}</td>
+        <td>${p20}</td>
+        <td>${p40}</td>
+        <td>${row["INVOICENO"] || ""}</td>
+        <td>${row["PACKAGE"] || ""}</td>
+        <td>${row["INCOMING PLAN"] || ""}</td>
+        <td>${row["STATUS PROGRESS"] || ""}</td>
+        <td>${row["TIME IN"] || ""}</td>
+        <td>${row["UNLOADING TIME"] || ""}</td>
+        <td>${row["FINISH"] || ""}</td>
+      </tr>
+    `;
+  }
 
-      // Kirim ke Web App
-      fetch('https://script.google.com/macros/s/AKfycby5vPXBTiDxkXo3Uc9SjXR0Pg52hKQ7qz69i7P18Yb8tGbHkdAXstypgNiA0Zmh8la7/exec', {
-        method: 'POST',
-        mode: 'no-cors',
+  function loadAirtableData() {
+    fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+      headers: { Authorization: token }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const rows = data.records.map(r => r.fields);
+        rows.forEach((row, i) => {
+          const html = renderRow(row, i);
+          table.row.add($(html));
+        });
+        table.draw();
+      })
+      .catch(err => console.error("Airtable error:", err));
+  }
+
+  function uploadToAirtable(records) {
+    const chunks = [];
+
+    // Airtable max 10 records per POST
+    for (let i = 0; i < records.length; i += 10) {
+      chunks.push(records.slice(i, i + 10));
+    }
+
+    const uploads = chunks.map(chunk => {
+      const payload = {
+        records: chunk.map(fields => ({ fields }))
+      };
+
+      return fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          Authorization: token,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(parsedData)
-      }).then(response => {
-        alert('Upload sukses ke Google Sheets!');
-      }).catch(error => {
-        alert('Upload gagal: ' + error.message);
+        body: JSON.stringify(payload)
       });
-    };
-    reader.readAsText(file);
+    });
+
+    return Promise.all(uploads);
+  }
+
+  function parseAndUploadCSV(file) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function (results) {
+        const rows = results.data;
+        uploadToAirtable(rows)
+          .then(() => {
+            alert("Data berhasil di-upload ke Airtable!");
+            table.clear().draw();
+            loadAirtableData();
+          })
+          .catch(err => {
+            console.error("Upload error:", err);
+            alert("Gagal mengupload ke Airtable.");
+          });
+      }
+    });
+  }
+
+  document.getElementById("csvFile").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (file) parseAndUploadCSV(file);
   });
+
+  // Load data awal dari Airtable
+  loadAirtableData();
 });
