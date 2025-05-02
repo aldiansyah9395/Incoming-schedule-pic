@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then(res => res.json())
       .then(data => {
+        console.log("Response dari Airtable:", data); // <-- Tambahkan ini
         table.clear();
         const rows = data.records.map(r => r.fields);
         rows.forEach((row, i) => {
