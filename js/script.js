@@ -1,7 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
   const table = $("#containerTable").DataTable();
-  const tableBody = document.querySelector("#containerTable tbody");
-
   const baseId = "appxekctFAWmMVFzc";
   const tableName = "data-cont";
   const token = "Bearer patiH2AOAO9YAtJhA.61cafc7228a34200466c4235f324b0a9368cf550d04e83656db17d3374ec35d4";
@@ -9,14 +7,13 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderRow(row, index) {
     const feet = row["FEET"]?.trim();
     const packageVal = row["PACKAGE"]?.trim().toLowerCase();
-
-    let np20 = '', np40 = '', p20 = '', p40 = '';
+    let np20 = "", np40 = "", p20 = "", p40 = "";
 
     if (packageVal !== "bag") {
       if (feet === '1x20"') {
-        p20 = '✔';
+        p20 = "✔";
       } else if (feet === '1x40"') {
-        np40 = '✔';
+        np40 = "✔";
       }
     }
 
@@ -46,6 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then(res => res.json())
       .then(data => {
+        table.clear();
         const rows = data.records.map(r => r.fields);
         rows.forEach((row, i) => {
           const html = renderRow(row, i);
@@ -58,8 +56,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function uploadToAirtable(records) {
     const chunks = [];
-
-    // Airtable max 10 records per POST
     for (let i = 0; i < records.length; i += 10) {
       chunks.push(records.slice(i, i + 10));
     }
@@ -90,13 +86,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const rows = results.data;
         uploadToAirtable(rows)
           .then(() => {
-            alert("Data berhasil di-upload ke Airtable!");
-            table.clear().draw();
+            alert("✅ Data berhasil dikirim ke Airtable!");
             loadAirtableData();
           })
           .catch(err => {
             console.error("Upload error:", err);
-            alert("Gagal mengupload ke Airtable.");
+            alert("❌ Gagal upload ke Airtable.");
           });
       }
     });
@@ -107,6 +102,5 @@ document.addEventListener("DOMContentLoaded", function () {
     if (file) parseAndUploadCSV(file);
   });
 
-  // Load data awal dari Airtable
   loadAirtableData();
 });
