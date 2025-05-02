@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const token = "Bearer patiH2AOAO9YAtJhA.61cafc7228a34200466c4235f324b0a9368cf550d04e83656db17d3374ec35d4";
 
   function renderRow(row, index) {
-    if (!row || !row["FEET"] || !row["PACKAGE"]) return ""; // Lewati data rusak
+    if (!row || !row["FEET"] || !row["PACKAGE"]) return "";
 
     const feet = row["FEET"].trim().toUpperCase();
     const packageVal = row["PACKAGE"].trim().toUpperCase();
@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function loadAirtableData() {
+    console.log("📥 Memuat data dari Airtable...");
     fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`, {
       headers: { Authorization: token }
     })
@@ -46,6 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(data => {
         table.clear();
         const rows = data.records.map(r => r.fields);
+        console.log(`📄 ${rows.length} record diterima dari Airtable`);
 
         rows
           .filter(row => row["FEET"] && row["PACKAGE"])
@@ -55,12 +57,12 @@ document.addEventListener("DOMContentLoaded", function () {
           });
 
         table.draw();
-        console.log("✔ Records loaded:", rows.length);
       })
-      .catch(err => console.error("Airtable error:", err));
+      .catch(err => console.error("❌ Gagal ambil data dari Airtable:", err));
   }
 
   async function deleteAllAirtableRecords() {
+    console.log("🛠 Memulai proses hapus semua record di Airtable...");
     const headers = {
       Authorization: token,
       "Content-Type": "application/json"
@@ -69,38 +71,48 @@ document.addEventListener("DOMContentLoaded", function () {
     const allRecords = [];
     let offset = "";
 
-    do {
-      const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}${offset ? `?offset=${offset}` : ""}`, {
-        headers: { Authorization: token }
-      });
-      const json = await res.json();
+    try {
+      do {
+        const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}${offset ? `?offset=${offset}` : ""}`, {
+          headers: { Authorization: token }
+        });
+        const json = await res.json();
 
-      if (json.records) {
-        allRecords.push(...json.records.map(r => r.id));
-        offset = json.offset;
-      } else {
-        offset = null;
+        if (json.records) {
+          allRecords.push(...json.records.map(r => r.id));
+          offset = json.offset;
+        } else {
+          offset = null;
+        }
+      } while (offset);
+
+      console.log(`🔎 Total record ditemukan: ${allRecords.length}`);
+
+      for (let i = 0; i < allRecords.length; i += 10) {
+        const batch = allRecords.slice(i, i + 10);
+        const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+          method: "DELETE",
+          headers,
+          body: JSON.stringify({ records: batch })
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("❌ Gagal hapus batch:", res.status, errorText);
+        } else {
+          const result = await res.json();
+          console.log(`✅ Dihapus ${result.records?.length || 0} record`);
+        }
       }
-    } while (offset);
 
-    console.log(`🧹 Total record ditemukan: ${allRecords.length}`);
-
-    for (let i = 0; i < allRecords.length; i += 10) {
-      const batch = allRecords.slice(i, i + 10);
-      const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
-        method: "DELETE",
-        headers,
-        body: JSON.stringify({ records: batch })
-      });
-
-      const result = await res.json();
-      console.log(`✅ Batch dihapus: ${result.records?.length || 0}`);
+      console.log("✅ Semua record lama berhasil dihapus.");
+    } catch (err) {
+      console.error("❌ Error saat menghapus semua record:", err);
     }
-
-    console.log("✅ Semua data lama berhasil dihapus.");
   }
 
   function uploadToAirtable(records) {
+    console.log(`📤 Mengupload ${records.length} record ke Airtable...`);
     const chunks = [];
     for (let i = 0; i < records.length; i += 10) {
       chunks.push(records.slice(i, i + 10));
@@ -125,15 +137,18 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function parseAndUploadCSV(file) {
+    console.log("📂 Parsing file CSV...");
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async function (results) {
         const rows = results.data;
-        await deleteAllAirtableRecords();      // Hapus semua data lama
-        await uploadToAirtable(rows);          // Upload data baru
+        console.log(`📊 ${rows.length} record ditemukan di CSV`);
+
+        await deleteAllAirtableRecords();
+        await uploadToAirtable(rows);
         alert("✅ Data berhasil dikirim ke Airtable!");
-        loadAirtableData();                    // Refresh tampilan
+        loadAirtableData();
       }
     });
   }
