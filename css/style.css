@@ -35,6 +35,38 @@ h1 {
   padding: 10px;
   border-radius: 5px;
   border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+#uploadBtn {
+  padding: 10px 20px;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+#uploadBtn:hover {
+  background-color: #125aaa;
+}
+
+#uploadStatus {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.status.info {
+  color: #333;
+}
+
+.status.success {
+  color: green;
+}
+
+.status.error {
+  color: red;
 }
 
 .table-wrapper {
