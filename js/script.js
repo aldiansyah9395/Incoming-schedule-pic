@@ -89,21 +89,22 @@ document.addEventListener("DOMContentLoaded", function () {
       console.log(`🔎 Total record ditemukan: ${allRecords.length}`);
 
       for (let i = 0; i < allRecords.length; i += 10) {
-        const batch = allRecords.slice(i, i + 10);
-        const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
-          method: "DELETE",
-          headers,
-          body: JSON.stringify({ records: batch.map(id => ({ id })) })
-        });
+  const batch = allRecords.slice(i, i + 10);
+  const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+    method: "DELETE",
+    headers,
+    body: JSON.stringify({ records: batch }) // ← yang ini penting
+  });
 
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("❌ Gagal hapus batch:", res.status, errorText);
-        } else {
-          const result = await res.json();
-          console.log(`✅ Dihapus ${result.records?.length || 0} record`);
-        }
-      }
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("❌ Gagal hapus batch:", res.status, errorText);
+  } else {
+    const result = await res.json();
+    console.log(`✅ Dihapus ${result.records?.length || 0} record`);
+  }
+}
+
 
       console.log("✅ Semua record lama berhasil dihapus.");
     } catch (err) {
