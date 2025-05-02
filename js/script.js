@@ -97,7 +97,10 @@ document.addEventListener("DOMContentLoaded", function () {
           continue;
         }
 
-        console.log("🚮 Menghapus batch:", batch);
+        console.log("🚮 Batch ke-", i / 10 + 1, "isi:", JSON.stringify(batch));
+        console.log("📏 Jumlah ID di batch:", batch.length);
+        console.log("📎 Tipe data setiap ID:", batch.map(id => typeof id));
+
 
         const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
           method: "DELETE",
