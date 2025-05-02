@@ -51,12 +51,14 @@ table.dataTable thead th {
   color: white;
   text-align: center;
   white-space: nowrap;
+  border: 1px solid #e0e0e0;
 }
 
 table.dataTable tbody td {
   text-align: center;
   white-space: nowrap;
   background-color: #ffffff;
+  border: 1px solid #e0e0e0;
 }
 
 table.dataTable tbody tr:nth-child(even) {
