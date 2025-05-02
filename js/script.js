@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
           method: "DELETE",
           headers,
-          body: JSON.stringify({ records: batch })
+          body: JSON.stringify({ records: batch.map(id => ({ id })) })
         });
 
         if (!res.ok) {
