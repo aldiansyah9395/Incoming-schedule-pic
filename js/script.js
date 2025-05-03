@@ -8,18 +8,26 @@ document.addEventListener("DOMContentLoaded", function () {
   const uploadBtn = document.getElementById("uploadBtn");
   const uploadStatus = document.getElementById("uploadStatus");
   let selectedFile = null;
+  let airtableRecords = {};
 
   function showStatus(message, type = "info") {
     uploadStatus.textContent = message;
     uploadStatus.className = `status ${type}`;
   }
 
-  function renderRow(row, index) {
+  function getStatusProgress(timeIn, unloadingTime, finish) {
+    if ([timeIn, unloadingTime, finish].every(val => val === "-" || !val.trim())) return "Reschedule";
+    if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
+    if (timeIn && unloadingTime && timeIn !== "-" && unloadingTime !== "-" && (!finish || finish === "-")) return "Processing";
+    if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
+    return "";
+  }
+
+  function renderRow(row, index, id) {
     if (!row || !row["FEET"] || !row["PACKAGE"]) return "";
 
     const feet = row["FEET"].trim().toUpperCase();
     const packageVal = row["PACKAGE"].trim().toUpperCase();
-
     let np20 = "", np40 = "", p20 = "", p40 = "";
     const isBag = packageVal.includes("BAG");
 
@@ -28,8 +36,10 @@ document.addEventListener("DOMContentLoaded", function () {
     else if (feet === '1X20' && !isBag) p20 = '✔';
     else if (feet === '1X40' && !isBag) p40 = '✔';
 
+    const status = row["STATUS PROGRESS"] || "";
+
     return `
-      <tr>
+      <tr data-id="${id}">
         <td>${index + 1}</td>
         <td>${row["NO CONTAINER"] || ""}</td>
         <td>${feet}</td>
@@ -37,13 +47,13 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${np40}</td>
         <td>${p20}</td>
         <td>${p40}</td>
-        <td>${row["INVOICENO"] || ""}</td>
+        <td>${row["INVOICE NO"] || ""}</td>
         <td>${row["PACKAGE"] || ""}</td>
         <td>${row["INCOMING PLAN"] || ""}</td>
-        <td>${row["STATUS PROGRESS"] || ""}</td>
-        <td>${row["TIME IN"] || ""}</td>
-        <td>${row["UNLOADING TIME"] || ""}</td>
-        <td>${row["FINISH"] || ""}</td>
+        <td class="status-progress">${status}</td>
+        <td contenteditable class="editable time-in">${row["TIME IN"] === "-" ? "" : (row["TIME IN"] || "")}</td>
+        <td contenteditable class="editable unloading-time">${row["UNLOADING TIME"] === "-" ? "" : (row["UNLOADING TIME"] || "")}</td>
+        <td contenteditable class="editable finish">${row["FINISH"] === "-" ? "" : (row["FINISH"] || "")}</td>
       </tr>
     `;
   }
@@ -55,19 +65,72 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(res => res.json())
       .then(data => {
         table.clear();
-        const rows = data.records.map(r => r.fields);
+        airtableRecords = {};
 
-        rows
-          .filter(row => row["FEET"] && row["PACKAGE"])
-          .forEach((row, i) => {
-            const html = renderRow(row, i);
-            if (html) table.row.add($(html));
-          });
+        data.records.forEach((record, i) => {
+          const html = renderRow(record.fields, i, record.id);
+          airtableRecords[record.id] = record.fields;
+          if (html) table.row.add($(html));
+        });
 
         table.draw();
       })
       .catch(err => console.error("❌ Gagal ambil data dari Airtable:", err));
   }
+
+  function sanitizeTime(value) {
+    const val = value?.trim();
+    return val === "" ? "-" : val;
+  }
+  
+
+  function updateAirtableField(recordId, timeInRaw, unloadingTimeRaw, finishRaw) {
+    const timeIn = sanitizeTime(timeInRaw);
+    const unloadingTime = sanitizeTime(unloadingTimeRaw);
+    const finish = sanitizeTime(finishRaw);
+    const status = getStatusProgress(timeIn, unloadingTime, finish);
+
+    const payload = {
+      fields: {
+        "TIME IN": timeIn,
+        "UNLOADING TIME": unloadingTime,
+        "FINISH": finish,
+        "STATUS PROGRESS": status
+      }
+    };
+
+    fetch(`https://api.airtable.com/v0/${baseId}/${tableName}/${recordId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(() => {
+        const row = document.querySelector(`tr[data-id='${recordId}']`);
+        if (row) row.querySelector(".status-progress").textContent = status;
+      })
+      .catch(err => {
+        console.error("❌ Update error:", err);
+        alert("Gagal mengupdate data ke Airtable. Cek console untuk detail.");
+      });
+  }
+
+  document.addEventListener("blur", function (e) {
+    if (e.target.classList.contains("editable")) {
+      const row = e.target.closest("tr");
+      const recordId = row.dataset.id;
+  
+      const timeIn = row.querySelector(".time-in").textContent.trim() || "-";
+      const unloading = row.querySelector(".unloading-time").textContent.trim() || "-";
+      const finish = row.querySelector(".finish").textContent.trim() || "-";
+  
+      updateAirtableField(recordId, timeIn, unloading, finish);
+    }
+  }, true);
+  
 
   async function deleteAllAirtableRecords() {
     const headers = {
