@@ -139,54 +139,51 @@ document.addEventListener("DOMContentLoaded", function () {
   }, true);
 
   async function deleteAllAirtableRecords() {
-  const headers = {
-    Authorization: token,
-    "Content-Type": "application/json"
-  };
+    const headers = {
+      Authorization: token,
+      "Content-Type": "application/json"
+    };
 
-  let allRecordIds = [];
-  let offset = undefined;
+    let allRecordIds = [];
+    let offset = "";
 
-  try {
-    // Ambil semua ID record
-    do {
-      const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}${offset ? `?offset=${offset}` : ""}`;
-      const res = await fetch(url, { headers });
-      const json = await res.json();
+    try {
+      do {
+        const res = await fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}${offset ? `?offset=${offset}` : ""}`, {
+          headers: { Authorization: token }
+        });
+        const json = await res.json();
 
-      if (json.records) {
-        const ids = json.records.map(r => r.id);
-        allRecordIds.push(...ids);
+        if (json.records && json.records.length > 0) {
+          const ids = json.records.map(r => r.id);
+          allRecordIds.push(...ids);
+          offset = json.offset || null;
+        } else {
+          offset = null;
+        }
+      } while (offset);
+
+      for (let i = 0; i < allRecordIds.length; i += 10) {
+        const batch = allRecordIds.slice(i, i + 10);
+
+        if (batch.length === 0) continue;
+
+        const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?${batch.map(id => `records[]=${id}`).join("&")}`;
+
+        const res = await fetch(url, {
+          method: "DELETE",
+          headers
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("❌ Gagal hapus batch:", res.status, errorText);
+        }
       }
-
-      offset = json.offset;
-    } while (offset);
-
-    // Hapus per 10 batch
-    for (let i = 0; i < allRecordIds.length; i += 10) {
-      const batch = allRecordIds.slice(i, i + 10);
-      const deleteUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?${batch.map(id => `records[]=${id}`).join("&")}`;
-
-      const res = await fetch(deleteUrl, {
-        method: "DELETE",
-        headers
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("❌ Gagal hapus batch:", res.status, errorText);
-      }
-
-      // Tambahkan delay untuk mencegah rate limit
-      await new Promise(resolve => setTimeout(resolve, 250));
+    } catch (err) {
+      console.error("❌ Error saat menghapus semua record:", err);
     }
-
-    console.log("✅ Semua record berhasil dihapus dari Airtable.");
-  } catch (err) {
-    console.error("❌ Error saat menghapus record:", err);
   }
-}
-
 
   function uploadToAirtable(records) {
     const chunks = [];
