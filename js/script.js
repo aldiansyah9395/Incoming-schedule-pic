@@ -58,6 +58,14 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
   }
 
+  function ensureAllFieldsAreStrings(record) {
+    const result = {};
+    for (const key in record) {
+      result[key] = record[key] !== null && record[key] !== undefined ? String(record[key]) : "";
+    }
+    return result;
+  }
+
   function loadAirtableData() {
     fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`, {
       headers: { Authorization: token }
@@ -82,7 +90,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const val = value?.trim();
     return val === "" ? "-" : val;
   }
-  
 
   function updateAirtableField(recordId, timeInRaw, unloadingTimeRaw, finishRaw) {
     const timeIn = sanitizeTime(timeInRaw);
@@ -122,15 +129,14 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.target.classList.contains("editable")) {
       const row = e.target.closest("tr");
       const recordId = row.dataset.id;
-  
+
       const timeIn = row.querySelector(".time-in").textContent.trim() || "-";
       const unloading = row.querySelector(".unloading-time").textContent.trim() || "-";
       const finish = row.querySelector(".finish").textContent.trim() || "-";
-  
+
       updateAirtableField(recordId, timeIn, unloading, finish);
     }
   }, true);
-  
 
   async function deleteAllAirtableRecords() {
     const headers = {
@@ -187,7 +193,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const uploads = chunks.map(chunk => {
       const payload = {
-        records: chunk.map(fields => ({ fields }))
+        records: chunk.map(rawFields => {
+          const fields = ensureAllFieldsAreStrings(rawFields);
+          fields["STATUS PROGRESS"] = getStatusProgress(fields["TIME IN"], fields["UNLOADING TIME"], fields["FINISH"]);
+          return { fields };
+        })
       };
 
       return fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
@@ -213,10 +223,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const rows = results.data;
 
         try {
-          showStatus("🗑 Menghapus data lama dari Airtable...", "info");
+          showStatus("🗑 Menghapus data lama dari Databse", "info");
           await deleteAllAirtableRecords();
 
-          showStatus("📤 Mengupload data baru ke Airtable...", "info");
+          showStatus("📤 Mengupload data baru ke Database...", "info");
           await uploadToAirtable(rows);
 
           showStatus("✅ Upload selesai!", "success");
