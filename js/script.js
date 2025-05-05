@@ -230,7 +230,11 @@ document.addEventListener("DOMContentLoaded", function () {
       header: true,
       skipEmptyLines: true,
       complete: async function (results) {
-        const rows = results.data;
+        const rows = results.data.filter(row => {
+  // Cek apakah setidaknya satu kolom tidak kosong
+  return Object.values(row).some(value => value && value.trim() !== "");
+});
+
 
         try {
           showStatus("🗑 Menghapus data lama dari Databse", "info");
