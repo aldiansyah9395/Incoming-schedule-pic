@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.addEventListener("blur", function (e) {
-    if (e.target && e.target.classList && e.target.classList.contains("editable")) {
+    if (e.target.classList.contains("editable")) {
       const row = e.target.closest("tr");
       const recordId = row.dataset.id;
 
