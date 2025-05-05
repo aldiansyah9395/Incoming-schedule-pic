@@ -185,32 +185,33 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function uploadToAirtable(records) {
-    const chunks = [];
-    for (let i = 0; i < records.length; i += 10) {
-      chunks.push(records.slice(i, i + 10));
-    }
-
-    const uploads = chunks.map(chunk => {
-      const payload = {
-        records: chunk.map(rawFields => {
-          const fields = ensureAllFieldsAreStrings(rawFields);
-          fields["STATUS PROGRESS"] = getStatusProgress(fields["TIME IN"], fields["UNLOADING TIME"], fields["FINISH"]);
-          return { fields };
-        })
-      };
-
-      return fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
-        method: "POST",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-    });
-
-    return Promise.all(uploads);
+  const chunks = [];
+  for (let i = 0; i < records.length; i += 10) {
+    chunks.push(records.slice(i, i + 10));
   }
+
+  const uploads = chunks.map(chunk => {
+    const payload = {
+      records: chunk.map(rawFields => {
+        const fields = ensureAllFieldsAreStrings(rawFields);
+        // JANGAN TAMBAHKAN "STATUS PROGRESS" KARENA SUDAH DIHAPUS DARI AIRTABLE
+        return { fields };
+      })
+    };
+
+    return fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+      method: "POST",
+      headers: {
+        Authorization: token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+  });
+
+  return Promise.all(uploads);
+}
+
 
   async function parseAndUploadCSV(file) {
     showStatus("⏳ Sedang memproses file CSV...", "info");
