@@ -16,12 +16,18 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getStatusProgress(timeIn, unloadingTime, finish) {
-    if ([timeIn, unloadingTime, finish].every(val => val === "-" || !val.trim())) return "Reschedule";
-    if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
-    if (timeIn && unloadingTime && timeIn !== "-" && unloadingTime !== "-" && (!finish || finish === "-")) return "Processing";
-    if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
-    return "";
-  }
+  // pastikan semua nilai tidak undefined/null
+  timeIn = (timeIn || "").toString().trim();
+  unloadingTime = (unloadingTime || "").toString().trim();
+  finish = (finish || "").toString().trim();
+
+  if ([timeIn, unloadingTime, finish].every(val => val === "-" || val === "")) return "Reschedule";
+  if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
+  if (timeIn && unloadingTime && timeIn !== "-" && unloadingTime !== "-" && (!finish || finish === "-")) return "Processing";
+  if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
+  return "";
+}
+
 
   function renderRow(row, index, id) {
     if (!row || !row["FEET"] || !row["PACKAGE"]) return "";
