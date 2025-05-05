@@ -16,22 +16,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getStatusProgress(timeIn, unloadingTime, finish) {
-  timeIn = typeof timeIn === 'string' ? timeIn.trim() : (timeIn ? String(timeIn).trim() : "");
-  unloadingTime = typeof unloadingTime === 'string' ? unloadingTime.trim() : (unloadingTime ? String(unloadingTime).trim() : "");
-  finish = typeof finish === 'string' ? finish.trim() : (finish ? String(finish).trim() : "");
-
-  const allEmpty = [timeIn, unloadingTime, finish].every(val => val === "");
-  const allDash = [timeIn, unloadingTime, finish].every(val => val === "-");
-
-  if (allEmpty) return "Outstanding";
-  if (allDash) return "Reschedule";
-  if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
-  if (timeIn && unloadingTime && timeIn !== "-" && unloadingTime !== "-" && (!finish || finish === "-")) return "Processing";
-  if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
-
-  return "";
-}
+    timeIn = typeof timeIn === 'string' ? timeIn.trim() : (timeIn ? String(timeIn).trim() : "");
+    unloadingTime = typeof unloadingTime === 'string' ? unloadingTime.trim() : (unloadingTime ? String(unloadingTime).trim() : "");
+    finish = typeof finish === 'string' ? finish.trim() : (finish ? String(finish).trim() : "");
   
+    const allEmpty = [timeIn, unloadingTime, finish].every(val => val === "");
+    const allDash = [timeIn, unloadingTime, finish].every(val => val === "-");
+  
+    if (allEmpty) return "Outstanding";
+    if (allDash) return "Reschedule";
+    if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
+    if (timeIn && unloadingTime && timeIn !== "-" && unloadingTime !== "-" && (!finish || finish === "-")) return "Processing";
+    if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
+  
+    return "";
+  }
+  
+  
+
   function renderRow(row, index, id) {
     if (!row || !row["FEET"] || !row["PACKAGE"]) return "";
 
@@ -45,8 +47,11 @@ document.addEventListener("DOMContentLoaded", function () {
     else if (feet === '1X20' && !isBag) p20 = '✔';
     else if (feet === '1X40' && !isBag) p40 = '✔';
 
-    const status = getStatusProgress(row["TIME IN"], row["UNLOADING TIME"], row["FINISH"]);
-    console.log("Record time values:", row["TIME IN"], row["UNLOADING TIME"], row["FINISH"]);
+    const timeIn = row["TIME IN"] === "-" ? "" : (row["TIME IN"] || "");
+    const unloadingTime = row["UNLOADING TIME"] === "-" ? "" : (row["UNLOADING TIME"] || "");
+    const finish = row["FINISH"] === "-" ? "" : (row["FINISH"] || "");
+    const status = getStatusProgress(timeIn, unloadingTime, finish);
+
 
     return `
       <tr data-id="${id}">
@@ -66,14 +71,6 @@ document.addEventListener("DOMContentLoaded", function () {
         <td contenteditable class="editable finish">${row["FINISH"] === "-" ? "" : (row["FINISH"] || "")}</td>
       </tr>
     `;
-  }
-
-  function ensureAllFieldsAreStrings(record) {
-    const result = {};
-    for (const key in record) {
-      result[key] = record[key] !== null && record[key] !== undefined ? String(record[key]) : "";
-    }
-    return result;
   }
 
   function loadAirtableData() {
@@ -100,6 +97,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const val = value?.trim();
     return val === "" ? "-" : val;
   }
+  
 
   function updateAirtableField(recordId, timeInRaw, unloadingTimeRaw, finishRaw) {
     const timeIn = sanitizeTime(timeInRaw);
@@ -137,15 +135,27 @@ document.addEventListener("DOMContentLoaded", function () {
   document.addEventListener("blur", function (e) {
     if (e.target.classList.contains("editable")) {
       const row = e.target.closest("tr");
-      const recordId = row.dataset.id;
-
+      const recordId = row?.dataset?.id;
+      if (!recordId) return;
+  
       const timeIn = row.querySelector(".time-in").textContent.trim() || "-";
       const unloading = row.querySelector(".unloading-time").textContent.trim() || "-";
       const finish = row.querySelector(".finish").textContent.trim() || "-";
-
-      updateAirtableField(recordId, timeIn, unloading, finish);
+  
+      const prevData = airtableRecords[recordId] || {};
+      const isChanged = (
+        (prevData["TIME IN"] || "-") !== timeIn ||
+        (prevData["UNLOADING TIME"] || "-") !== unloading ||
+        (prevData["FINISH"] || "-") !== finish
+      );
+  
+      if (isChanged) {
+        updateAirtableField(recordId, timeIn, unloading, finish);
+      }
     }
   }, true);
+  
+  
 
   async function deleteAllAirtableRecords() {
     const headers = {
@@ -194,97 +204,88 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function cleanFields(raw) {
-  const result = {};
-  for (const key in raw) {
-    const value = raw[key];
-    if (value != null && value !== "") {
-      result[key] = value;
+  function ensureAllFieldsAreStrings(record) {
+    const newRecord = {};
+    for (const key in record) {
+      if (record.hasOwnProperty(key)) {
+        newRecord[key] = record[key] !== undefined && record[key] !== null ? String(record[key]) : "";
+      }
     }
+    return newRecord;
   }
-  return result;
-}
+  
 
-function uploadToAirtable(records) {
-  const chunks = [];
-  for (let i = 0; i < records.length; i += 10) {
-    chunks.push(records.slice(i, i + 10));
+  function uploadToAirtable(records) {
+    const chunks = [];
+    for (let i = 0; i < records.length; i += 10) {
+      chunks.push(records.slice(i, i + 10));
+    }
+  
+    const uploads = chunks.map(chunk => {
+      const payload = {
+        records: chunk.map(rawFields => {
+          const fields = ensureAllFieldsAreStrings(rawFields);
+          // JANGAN TAMBAHKAN "STATUS PROGRESS" KARENA SUDAH DIHAPUS DARI AIRTABLE
+          return { fields };
+        })
+      };
+  
+      return fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+    });
+  
+    return Promise.all(uploads);
   }
+  
 
-  const uploads = chunks.map(chunk => {
-    const payload = {
-      records: chunk.map(rawFields => {
-        const fields = cleanFields(rawFields); // gunakan pembersih
-        return { fields };
-      })
-    };
+  async function parseAndUploadCSV(file) {
+    showStatus("⏳ Sedang memproses file CSV...", "info");
 
-    return fetch(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`, {
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    }).then(response => {
-      if (!response.ok) {
-        return response.json().then(err => {
-          console.error("❌ Gagal upload chunk:", payload, err);
-          throw new Error("Upload chunk gagal");
-        });
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async function (results) {
+        const rows = results.data;
+
+        try {
+          showStatus("🗑 Menghapus data lama dari Database...", "info");
+          await deleteAllAirtableRecords();
+
+          showStatus("📤 Mengupload data baru ke Database...", "info");
+          await uploadToAirtable(rows);
+
+          showStatus("✅ Upload selesai!", "success");
+          document.getElementById("csvFile").value = ""; // ✅ Reset input file
+          setTimeout(() => showStatus("", ""), 3000);         // ✅ Hilangkan notifikasi setelah 3 detik
+          loadAirtableData();
+
+        } catch (err) {
+          console.error(err);
+          showStatus("❌ Gagal upload data!", "error");
+        }
       }
     });
-  });
-
-  return Promise.all(uploads);
-}
-
-async function parseAndUploadCSV(file) {
-  showStatus("⏳ Sedang memproses file CSV...", "info");
-
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: async function (results) {
-      const rows = results.data.filter(row => {
-        // Hindari error .trim() dengan validasi aman
-        return Object.values(row).some(value => {
-          if (typeof value === "string") {
-            return value.trim() !== "";
-          }
-          return value !== undefined && value !== null;
-        });
-      });
-
-      try {
-        showStatus("🗑 Menghapus data lama dari Database", "info");
-        await deleteAllAirtableRecords();
-
-        showStatus("📤 Mengupload data baru ke Database...", "info");
-        await uploadToAirtable(rows);
-
-        showStatus("✅ Upload selesai!", "success");
-        loadAirtableData();
-      } catch (err) {
-        console.error(err);
-        showStatus("❌ Gagal upload data!", "error");
-      }
-    }
-  });
-}
-
-csvInput.addEventListener("change", function (e) {
-  selectedFile = e.target.files[0];
-  showStatus("📁 File siap diupload. Klik tombol Upload.", "info");
-});
-
-uploadBtn.addEventListener("click", function () {
-  if (!selectedFile) {
-    showStatus("⚠️ Silakan pilih file CSV terlebih dahulu!", "error");
-    return;
   }
 
-  parseAndUploadCSV(selectedFile);
-});
+  csvInput.addEventListener("change", function (e) {
+    selectedFile = e.target.files[0];
+    showStatus("📁 File siap diupload. Klik tombol Upload.", "info");
+  });
 
-loadAirtableData();
+  uploadBtn.addEventListener("click", function () {
+    if (!selectedFile) {
+      showStatus("⚠️ Silakan pilih file CSV terlebih dahulu!", "error");
+      return;
+    }
+
+    parseAndUploadCSV(selectedFile);
+  });
+
+  loadAirtableData();
+});
