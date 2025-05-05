@@ -16,20 +16,22 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getStatusProgress(timeIn, unloadingTime, finish) {
-  // Paksa semua nilai menjadi string aman
   timeIn = typeof timeIn === 'string' ? timeIn.trim() : (timeIn ? String(timeIn).trim() : "");
   unloadingTime = typeof unloadingTime === 'string' ? unloadingTime.trim() : (unloadingTime ? String(unloadingTime).trim() : "");
   finish = typeof finish === 'string' ? finish.trim() : (finish ? String(finish).trim() : "");
 
-  if ([timeIn, unloadingTime, finish].every(val => val === "-" || val === "")) return "Reschedule";
+  const allEmpty = [timeIn, unloadingTime, finish].every(val => val === "");
+  const allDash = [timeIn, unloadingTime, finish].every(val => val === "-");
+
+  if (allEmpty) return "Outstanding";
+  if (allDash) return "Reschedule";
   if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
   if (timeIn && unloadingTime && timeIn !== "-" && unloadingTime !== "-" && (!finish || finish === "-")) return "Processing";
   if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
+
   return "";
 }
-
-
-
+  
   function renderRow(row, index, id) {
     if (!row || !row["FEET"] || !row["PACKAGE"]) return "";
 
