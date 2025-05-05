@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
     else if (feet === '1X20' && !isBag) p20 = '✔';
     else if (feet === '1X40' && !isBag) p40 = '✔';
 
-    const status = row["STATUS PROGRESS"] || "";
+    const status = getStatusProgress(row["TIME IN"], row["UNLOADING TIME"], row["FINISH"]);
 
     return `
       <tr data-id="${id}">
@@ -102,7 +102,6 @@ document.addEventListener("DOMContentLoaded", function () {
         "TIME IN": timeIn,
         "UNLOADING TIME": unloadingTime,
         "FINISH": finish,
-        "STATUS PROGRESS": status
       }
     };
 
