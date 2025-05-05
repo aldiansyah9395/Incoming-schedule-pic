@@ -194,7 +194,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function uploadToAirtable(records) {
+  function cleanFields(raw) {
+  const result = {};
+  for (const key in raw) {
+    const value = raw[key];
+    if (value != null && value !== "") {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+function uploadToAirtable(records) {
   const chunks = [];
   for (let i = 0; i < records.length; i += 10) {
     chunks.push(records.slice(i, i + 10));
@@ -203,8 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const uploads = chunks.map(chunk => {
     const payload = {
       records: chunk.map(rawFields => {
-        const fields = ensureAllFieldsAreStrings(rawFields);
-        // JANGAN TAMBAHKAN "STATUS PROGRESS" KARENA SUDAH DIHAPUS DARI AIRTABLE
+        const fields = cleanFields(rawFields); // gunakan pembersih
         return { fields };
       })
     };
@@ -216,56 +226,65 @@ document.addEventListener("DOMContentLoaded", function () {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
+    }).then(response => {
+      if (!response.ok) {
+        return response.json().then(err => {
+          console.error("❌ Gagal upload chunk:", payload, err);
+          throw new Error("Upload chunk gagal");
+        });
+      }
     });
   });
 
   return Promise.all(uploads);
 }
 
+async function parseAndUploadCSV(file) {
+  showStatus("⏳ Sedang memproses file CSV...", "info");
 
-  async function parseAndUploadCSV(file) {
-    showStatus("⏳ Sedang memproses file CSV...", "info");
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: async function (results) {
+      const rows = results.data.filter(row => {
+        // Hindari error .trim() dengan validasi aman
+        return Object.values(row).some(value => {
+          if (typeof value === "string") {
+            return value.trim() !== "";
+          }
+          return value !== undefined && value !== null;
+        });
+      });
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async function (results) {
-        const rows = results.data.filter(row => {
-  // Cek apakah setidaknya satu kolom tidak kosong
-  return Object.values(row).some(value => value && value.trim() !== "");
+      try {
+        showStatus("🗑 Menghapus data lama dari Database", "info");
+        await deleteAllAirtableRecords();
+
+        showStatus("📤 Mengupload data baru ke Database...", "info");
+        await uploadToAirtable(rows);
+
+        showStatus("✅ Upload selesai!", "success");
+        loadAirtableData();
+      } catch (err) {
+        console.error(err);
+        showStatus("❌ Gagal upload data!", "error");
+      }
+    }
+  });
+}
+
+csvInput.addEventListener("change", function (e) {
+  selectedFile = e.target.files[0];
+  showStatus("📁 File siap diupload. Klik tombol Upload.", "info");
 });
 
-
-        try {
-          showStatus("🗑 Menghapus data lama dari Databse", "info");
-          await deleteAllAirtableRecords();
-
-          showStatus("📤 Mengupload data baru ke Database...", "info");
-          await uploadToAirtable(rows);
-
-          showStatus("✅ Upload selesai!", "success");
-          loadAirtableData();
-        } catch (err) {
-          console.error(err);
-          showStatus("❌ Gagal upload data!", "error");
-        }
-      }
-    });
+uploadBtn.addEventListener("click", function () {
+  if (!selectedFile) {
+    showStatus("⚠️ Silakan pilih file CSV terlebih dahulu!", "error");
+    return;
   }
 
-  csvInput.addEventListener("change", function (e) {
-    selectedFile = e.target.files[0];
-    showStatus("📁 File siap diupload. Klik tombol Upload.", "info");
-  });
-
-  uploadBtn.addEventListener("click", function () {
-    if (!selectedFile) {
-      showStatus("⚠️ Silakan pilih file CSV terlebih dahulu!", "error");
-      return;
-    }
-
-    parseAndUploadCSV(selectedFile);
-  });
-
-  loadAirtableData();
+  parseAndUploadCSV(selectedFile);
 });
+
+loadAirtableData();
