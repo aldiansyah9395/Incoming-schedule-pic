@@ -16,10 +16,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getStatusProgress(timeIn, unloadingTime, finish) {
-  // pastikan semua nilai tidak undefined/null
-  timeIn = (timeIn || "").toString().trim();
-  unloadingTime = (unloadingTime || "").toString().trim();
-  finish = (finish || "").toString().trim();
+  // Paksa semua nilai menjadi string aman
+  timeIn = typeof timeIn === 'string' ? timeIn.trim() : (timeIn ? String(timeIn).trim() : "");
+  unloadingTime = typeof unloadingTime === 'string' ? unloadingTime.trim() : (unloadingTime ? String(unloadingTime).trim() : "");
+  finish = typeof finish === 'string' ? finish.trim() : (finish ? String(finish).trim() : "");
 
   if ([timeIn, unloadingTime, finish].every(val => val === "-" || val === "")) return "Reschedule";
   if (timeIn && timeIn !== "-" && (!unloadingTime || unloadingTime === "-")) return "Waiting";
@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (timeIn && unloadingTime && finish && timeIn !== "-" && unloadingTime !== "-" && finish !== "-") return "Finish";
   return "";
 }
+
 
 
   function renderRow(row, index, id) {
@@ -43,6 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
     else if (feet === '1X40' && !isBag) p40 = '✔';
 
     const status = getStatusProgress(row["TIME IN"], row["UNLOADING TIME"], row["FINISH"]);
+    console.log("Record time values:", row["TIME IN"], row["UNLOADING TIME"], row["FINISH"]);
 
     return `
       <tr data-id="${id}">
