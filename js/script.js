@@ -65,7 +65,9 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${row["INVOICE NO"] || ""}</td>
         <td>${row["PACKAGE"] || ""}</td>
         <td>${row["INCOMING PLAN"] || ""}</td>
-        <td class="status-progress">${status}</td>
+        <td class="status-progress">
+          <span class="label label-${status.toLowerCase()}">${status}</span>
+        </td>
         <td contenteditable class="editable time-in">${row["TIME IN"] === "-" ? "" : (row["TIME IN"] || "")}</td>
         <td contenteditable class="editable unloading-time">${row["UNLOADING TIME"] === "-" ? "" : (row["UNLOADING TIME"] || "")}</td>
         <td contenteditable class="editable finish">${row["FINISH"] === "-" ? "" : (row["FINISH"] || "")}</td>
