@@ -36,6 +36,21 @@ function getStatusProgress(timeIn, unloadingTime, finish) {
   if (timeIn && unloadingTime && finish) return "Finish";
   return "";
 }
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return dateStr;
+
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parseInt(parts[2], 10);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const shortYear = year.toString().slice(-2);
+  return `${day}-${monthNames[month]}-${shortYear}`;
+}
 
 function renderRow(row, index, id) {
   const feet = row["FEET"]?.trim().toUpperCase();
@@ -64,7 +79,7 @@ function renderRow(row, index, id) {
       <td>${p40}</td>
       <td>${row["INVOICE NO"] || ""}</td>
       <td>${row["PACKAGE"] || ""}</td>
-      <td>${row["INCOMING PLAN"] || ""}</td>
+      <td>${formatDate(row["INCOMING PLAN"])}</td>
       <td class="status-progress"><span class="label label-${status.toLowerCase()}">${status}</span></td>
       <td contenteditable class="editable time-in">${timeIn}</td>
       <td contenteditable class="editable unloading-time">${unloadingTime}</td>
